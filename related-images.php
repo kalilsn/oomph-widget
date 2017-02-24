@@ -20,8 +20,6 @@ class Related_Images_Widget extends WP_Widget {
 
     /**
      * Output related image
-     *
-     *
      */
     public function widget($args, $instance) {
         $search_term = $this->getPostTopic();
@@ -33,7 +31,6 @@ class Related_Images_Widget extends WP_Widget {
 
     /**
      * Output form for setting api key
-     *
      */
 
     public function form($instance) {
@@ -64,7 +61,7 @@ class Related_Images_Widget extends WP_Widget {
     /**
      * Get the subject of the post and return a string to query the api with
      * 
-     * 
+     * @return string|bool 
      */
 
     public function getPostTopic() {
@@ -80,7 +77,8 @@ class Related_Images_Widget extends WP_Widget {
     /**
      * Get an image url from the flickr api
      * 
-     * 
+     * @param string $api_key flickr api key is required to access the api
+     * @return string
      */
     public function getImageURL($api_key) {
         $params = array(
@@ -88,5 +86,12 @@ class Related_Images_Widget extends WP_Widget {
                 'method'    => 'flickr.photos.search',
                 'format'    => 'php_serial',
         );
+
+        
     }
 }
+
+//Register the widget
+add_action( 'widgets_init', function(){
+    register_widget('Related_Images_Widget');
+});
