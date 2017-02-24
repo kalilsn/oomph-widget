@@ -23,10 +23,18 @@ class Related_Images_Widget extends WP_Widget {
      */
     public function widget($args, $instance) {
         $search_term = $this->getPostTopic();
+        if (!$search_term) {
+            echo "something's wrong with the search_string function";
+            return false;
+        }
         $api_key = $instance['api_key'];
         $url = $this->getImageURL($api_key);
-
-        echo $args['before_widget'] . "<img src=\"$url\">" . $args['after_widget'];
+        if ($url) {
+            echo $args['before_widget'] . "<img src=\"$url\">" . $args['after_widget'];
+        } else {
+            echo "<p>something's wrong with the flickr api call</p>";
+        }
+        
     }
 
     /**
@@ -68,6 +76,14 @@ class Related_Images_Widget extends WP_Widget {
         $query_obj = get_queried_object();
         if ($query_obj) {
             $post_id = $query_obj->ID;
+            $tags = wp_get_post_tags($post_id, array('fields' => 'names'));
+            if ($tags) {
+                //If post has tags, search by tags
+                return join(' ', $tags);
+            } else {
+                //Otherwise by title
+                return get_the_title($post_id);
+            }
 
         } else {
             return false;
@@ -76,18 +92,46 @@ class Related_Images_Widget extends WP_Widget {
 
     /**
      * Get an image url from the flickr api
+     * Mostly stolen from https://www.flickr.com/services/api/response.php.html
      * 
-     * @param string $api_key flickr api key is required to access the api
-     * @return string
+     * @param string $search_string String to search the api for
+     * @param string $api_key A flickr api key is required to access the api
+     * @return string|bool
      */
-    public function getImageURL($api_key) {
+    public function getImageURL($search_string, $api_key) {
         $params = array(
-                'api_key'   => $api_key,
-                'method'    => 'flickr.photos.search',
-                'format'    => 'php_serial',
+                'api_key' => $api_key,
+                'method' => 'flickr.photos.search',
+                'format' => 'php_serial',
+                'text' => $search_string,
+                'sort' => 'relevance',
+                'safe_search' => 1,
+                'content_type' => 1,
+                'media' => 1,
+                'per_page' => 1,
+                'page' => 1
         );
-
         
+        $encoded_params = array();
+        foreach ($params as $k => $v){
+            $encoded_params[] = urlencode($k).'='.urlencode($v);
+        }
+        
+        $url = "https://api.flickr.com/services/rest/?".implode('&', $encoded_params);
+        $rsp = file_get_contents($url);
+        $rsp_obj = unserialize($rsp);
+
+        if ($rsp_obj['stat'] === 'ok') {
+            $photo = $rsp_obj['photos'][0];
+            $id = $photo['id'];
+            $farm = $photo['farm'];
+            $server = $photo['server'];
+            $secret = $photo['secret'];
+            $owner = $photo['owner'];
+            return 'https://farm' . $farm . '.staticflickr.com/' . $server . '/' . $id . '_' . '$secret' . '_z.jpg';
+        } else {
+            return false;
+        }
     }
 }
 
