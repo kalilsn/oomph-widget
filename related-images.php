@@ -49,7 +49,7 @@ class Related_Images_Widget extends WP_Widget {
         }
         ?>
         <p>
-            <label for="api_key"></label>
+            <label for="api_key">Flickr api key:</label>
             <input type="text" id="api_key" name="api_key" value="<?php echo esc_attr($api_key); ?>">
         </p>
         <?php
