@@ -24,15 +24,14 @@ class Related_Images_Widget extends WP_Widget {
     public function widget($args, $instance) {
         $search_term = $this->getPostTopic();
         if (!$search_term) {
-            echo "something's wrong with the search_string function";
             return false;
         }
         $api_key = $instance['api_key'];
-        $url = $this->getImageURL($api_key);
+        $url = $this->getImageURL($search_term, $api_key);
         if ($url) {
             echo $args['before_widget'] . "<img src=\"$url\">" . $args['after_widget'];
         } else {
-            echo "<p>something's wrong with the flickr api call</p>";
+            return false;
         }
         
     }
@@ -42,15 +41,11 @@ class Related_Images_Widget extends WP_Widget {
      */
 
     public function form($instance) {
-        if (isset($instance['api_key'])) {
-            $api_key = $instance['api_key'];
-        } else {
-            $api_key = '';
-        }
+        $api_key = !empty($instance['api_key']) ? $instance['api_key'] : 'Your api key here';
         ?>
         <p>
-            <label for="api_key">Flickr api key:</label>
-            <input type="text" id="api_key" name="api_key" value="<?php echo esc_attr($api_key); ?>">
+            <label for="<?php echo $this->get_field_id('api_key'); ?>">Flickr api key:</label>
+            <input type="text" id="<?php echo $this->get_field_id('api_key'); ?>" name="<?php echo $this->get_field_name('api_key'); ?>" value="<?php echo esc_attr($api_key); ?>">
         </p>
         <?php
     }
@@ -60,8 +55,8 @@ class Related_Images_Widget extends WP_Widget {
      *
      */
     public function update($new_instance, $old_instance) {
-        $instance = array();
-        $instance['api_key'] = (!empty($new_instance['api_key'])) ? strip_tags($new_instance['api_key']) : '';
+        $instance = $old_instance;
+        $instance['api_key'] = strip_tags($new_instance['api_key']);
  
         return $instance;
     }
@@ -122,13 +117,13 @@ class Related_Images_Widget extends WP_Widget {
         $rsp_obj = unserialize($rsp);
 
         if ($rsp_obj['stat'] === 'ok') {
-            $photo = $rsp_obj['photos'][0];
+            $photo = $rsp_obj['photos']['photo'][0];
             $id = $photo['id'];
             $farm = $photo['farm'];
             $server = $photo['server'];
             $secret = $photo['secret'];
             $owner = $photo['owner'];
-            return 'https://farm' . $farm . '.staticflickr.com/' . $server . '/' . $id . '_' . '$secret' . '_z.jpg';
+            return 'https://farm' . $farm . '.staticflickr.com/' . $server . '/' . $id . '_' . $secret . '_z.jpg';
         } else {
             return false;
         }
